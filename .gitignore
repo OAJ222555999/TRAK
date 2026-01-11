@@ -1,0 +1,91 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Visual Studio files
+.vs/
+*.user
+*.suo
+*.ipch
+*.aps
+*.opensdf
+*.sdf
+*.cache
+*.log
+*.tlog
+
+# Visual Studio Code
+.vscode/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# Custom Build Directories
+build/
+out/
+bin/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Kopia zapasowa plików
+*.bak
+*.swp
+*~
+
+# Debug symbols
+*.pdb
+*.idb
+
+# Visual Studio 2022
+*.slnx
+*.vcxproj.user
+x64/
+Debug/
+Release/
+
+# IDE
+.idea/
+
+# Artefakty z innych komputerow
+CMakeCache.txt

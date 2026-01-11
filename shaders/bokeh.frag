@@ -12,6 +12,13 @@ float hash(vec2 p)
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 }
 
+// TODO readme.md #4 - aperture shape
+// Funkcja: getApertureWeight(offset) -> float
+// Sample aperture texture (Sec.5.4.1 Jeong 2022)
+float getApertureWeight(vec2 offset) {
+    return 1.0;
+}
+
 void main()
 {
     vec2 texel = 1.0 / u_Resolution;
@@ -19,10 +26,11 @@ void main()
     vec3 sum = vec3(0.0);
     float weightSum = 0.0;
 
-    const int SAMPLES = 206;
+    const int SAMPLES = 32; 
     const float GOLDEN_ANGLE = 2.39996323;
 
     float radiusPx = u_Radius * u_Resolution.y * 0.01;
+    radiusPx = min(radiusPx, 40.0);
 
     float randAngle = hash(vUV * u_Resolution) * 6.2831853;
 
@@ -38,10 +46,10 @@ void main()
         vec3 color =
             texture(u_HighlightTexture, vUV + offset).rgb;
 
-        
         float diskMask = smoothstep(1.0, 0.95, r);
+        float apertureWeight = getApertureWeight(vec2(cos(a), sin(a)) * r);
 
-        float w = diskMask;
+        float w = diskMask * apertureWeight;
 
         sum += color * color * w;
         weightSum += w;

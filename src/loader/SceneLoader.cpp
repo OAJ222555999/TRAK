@@ -81,8 +81,12 @@ Scene SceneLoader::loadGLTF(const std::string& path)
     }
 
     std::cout << "[GLTF] Loaded\n";
-    std::cout << "Meshes: " << model.meshes.size() << std::endl;
+    std::cout << "[GLTF] Meshes: " << model.meshes.size() << std::endl;
+    std::cout << "[GLTF] Images: " << model.images.size() << std::endl;
+    std::cout << "[GLTF] Materials: " << model.materials.size() << std::endl;
+    std::cout << "[GLTF] Processing meshes..." << std::flush;
 
+    int meshCount = 0;
     for (const tinygltf::Mesh& mesh : model.meshes)
     {
         for (const tinygltf::Primitive& prim : mesh.primitives)
@@ -262,8 +266,10 @@ Scene SceneLoader::loadGLTF(const std::string& path)
 
             scene.objects.push_back(obj);
         }
+        meshCount++;
     }
 
+    std::cout << " done" << std::endl;
     std::cout << "[GLTF] Scene objects: "
               << scene.objects.size() << std::endl;
 

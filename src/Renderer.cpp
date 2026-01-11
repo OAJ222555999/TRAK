@@ -17,7 +17,34 @@ Renderer::Renderer()
 
 Renderer::~Renderer()
 {
-    std::cout << "Renderer destroyed\n";
+    delete m_Camera;
+    delete m_SceneShader;
+    delete m_ScreenShader;
+    delete m_HighlightShader;
+    delete m_DOFShader;
+    delete m_Scene3DShader;
+    delete m_BokehShader;
+    delete m_FinalShader;
+    
+    glDeleteVertexArrays(1, &m_VAO);
+    glDeleteBuffers(1, &m_VBO);
+    glDeleteVertexArrays(1, &m_CubeVAO);
+    glDeleteBuffers(1, &m_CubeVBO);
+    
+    glDeleteFramebuffers(1, &m_FBO);
+    glDeleteTextures(1, &m_ColorTexture);
+    glDeleteTextures(1, &m_DepthTexture);
+    
+    glDeleteFramebuffers(1, &m_HighlightFBO);
+    glDeleteTextures(1, &m_HighlightTexture);
+    
+    glDeleteFramebuffers(1, &m_DOFFBO);
+    glDeleteTextures(1, &m_DOFTexture);
+    
+    glDeleteFramebuffers(1, &m_BokehFBO);
+    glDeleteTextures(1, &m_BokehTexture);
+    
+    std::cout << "Renderer destroyed (cleanup done)" << std::endl;
 }
 
 void Renderer::init()
@@ -97,38 +124,38 @@ void Renderer::init()
                           (void*)(2 * sizeof(float)));
 
    m_SceneShader = new Shader(
-    "../shaders/fullscreen.vert",
-    "../shaders/fullscreen.frag"
+    "shaders/fullscreen.vert",
+    "shaders/fullscreen.frag"
     );
 
     m_ScreenShader = new Shader(
-        "../shaders/fullscreen.vert",
-        "../shaders/screen.frag"
+        "shaders/fullscreen.vert",
+        "shaders/screen.frag"
     );
 
     m_HighlightShader = new Shader(
-    "../shaders/fullscreen.vert",
-    "../shaders/highlight.frag"
+    "shaders/fullscreen.vert",
+    "shaders/highlight.frag"
     );
 
     m_DOFShader = new Shader(
-        "../shaders/fullscreen.vert",
-        "../shaders/dof.frag"
+        "shaders/fullscreen.vert",
+        "shaders/dof.frag"
     );
 
     m_Scene3DShader = new Shader(
-    "../shaders/scene3d.vert",
-    "../shaders/scene3d.frag"
+    "shaders/scene3d.vert",
+    "shaders/scene3d.frag"
     );
 
     m_BokehShader = new Shader(
-    "../shaders/fullscreen.vert",
-    "../shaders/bokeh.frag"
+    "shaders/fullscreen.vert",
+    "shaders/bokeh.frag"
     );
 
     m_FinalShader = new Shader(
-    "../shaders/fullscreen.vert",
-    "../shaders/final.frag"
+    "shaders/fullscreen.vert",
+    "shaders/final.frag"
 );
 
 
@@ -341,12 +368,10 @@ void Renderer::init()
 
         glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 
-        
-
-
-        m_Scene = SceneLoader::loadGLTF("../assets/fountain_base/scene.gltf");
-        std::cout << "[RENDERER] Loaded scene objects: "
-            << m_Scene.objects.size() << std::endl;
+        std::cout << "[RENDERER] Loading scene..." << std::flush;
+        m_Scene = SceneLoader::loadGLTF(params.scenePath);
+        std::cout << "[RENDERER] Loaded scene: " << params.scenePath
+            << " (" << m_Scene.objects.size() << " objects)" << std::endl;
 
 
 
@@ -482,7 +507,7 @@ glUniform1f(
 
     glUniform1f(
         glGetUniformLocation(m_HighlightShader->getID(), "u_Threshold"),
-        0.3f
+        params.highlightThreshold
     );
 
     glBindVertexArray(m_VAO);
@@ -507,7 +532,7 @@ glUniform1f(
 
     glUniform1f(
         glGetUniformLocation(m_BokehShader->getID(), "u_Radius"),
-        6.0f   // 4–10
+        params.bokehRadius
     );
 
     glUniform2f(
@@ -550,15 +575,14 @@ glUniform1f(
         1280.0f, 720.0f
     );
 
-    //PARAMETRY
     glUniform1f(
         glGetUniformLocation(m_DOFShader->getID(), "u_FocusDepth"),
-        0.925f
+        params.focusDepth
     );
 
     glUniform1f(
         glGetUniformLocation(m_DOFShader->getID(), "u_BlurStrength"),
-        15.0f
+        params.blurStrength
     );
 
     glBindVertexArray(m_VAO);

@@ -16,11 +16,7 @@ static bool firstMouse = true;
 Application::Application()
     : m_Window(nullptr), m_Running(true)
 {
-    
-    
     initWindow();
-    m_Renderer.init();
-
 }
 
 Application::~Application()
@@ -95,6 +91,8 @@ void Application::initWindow()
 
 void Application::run()
 {
+    m_Renderer.init();
+    
     std::cout << "Working directory: "
               << std::filesystem::current_path()
               << std::endl;
@@ -124,6 +122,20 @@ if (cam)
     cam->processKeyboard(forward, right, dt);
 }
 
+    BokehParams& p = m_Renderer.params;
+    if (glfwGetKey(m_Window, GLFW_KEY_UP) == GLFW_PRESS)    p.focusDepth += 0.005f;
+    if (glfwGetKey(m_Window, GLFW_KEY_DOWN) == GLFW_PRESS)  p.focusDepth -= 0.005f;
+    if (glfwGetKey(m_Window, GLFW_KEY_LEFT) == GLFW_PRESS)  p.bokehRadius -= 0.1f;
+    if (glfwGetKey(m_Window, GLFW_KEY_RIGHT) == GLFW_PRESS) p.bokehRadius += 0.1f;
+    if (glfwGetKey(m_Window, GLFW_KEY_Q) == GLFW_PRESS)     p.aperture -= 0.05f;
+    if (glfwGetKey(m_Window, GLFW_KEY_E) == GLFW_PRESS)     p.aperture += 0.05f;
+    
+    if (p.focusDepth < 0.0f) p.focusDepth = 0.0f;
+    if (p.focusDepth > 1.0f) p.focusDepth = 1.0f;
+    if (p.bokehRadius < 1.0f) p.bokehRadius = 1.0f;
+    if (p.bokehRadius > 20.0f) p.bokehRadius = 20.0f;
+    if (p.aperture < 1.0f) p.aperture = 1.0f;
+    if (p.aperture > 22.0f) p.aperture = 22.0f;
 
     m_Renderer.render();
     glfwSwapBuffers(m_Window);

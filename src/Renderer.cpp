@@ -412,6 +412,81 @@ void Renderer::init()
 
 void Renderer::render()
 {
+    glm::mat4 model = glm::scale(obj.model, glm::vec3(params.modelScale));
+
+    glm::mat4 mvp =
+        m_Camera->getProjection() *
+        m_Camera->getView() *
+        model;
+
+    // MVP
+    glUniformMatrix4fv(
+        glGetUniformLocation(m_Scene3DShader->getID(), "u_MVP"),
+        1,
+        GL_FALSE,
+        &mvp[0][0]
+    );
+
+    //MODEL
+    glUniformMatrix4fv(
+        glGetUniformLocation(m_Scene3DShader->getID(), "u_Model"),
+        1,
+        GL_FALSE,
+        &model[0][0]
+    );
+
+    glBindVertexArray(obj.vao);
+
+    // ALBEDO
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, obj.albedoTexture);
+
+    glUniform1i(
+        glGetUniformLocation(m_Scene3DShader->getID(), "u_Albedo"),
+        0
+    );
+    // NORMAL MAP
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, obj.normalTexture);
+    glUniform1i(
+        glGetUniformLocation(m_Scene3DShader->getID(), "u_NormalMap"),
+        1
+    );
+    
+  // EMISSIVE MAP
+glActiveTexture(GL_TEXTURE2);
+glBindTexture(
+    GL_TEXTURE_2D,
+    obj.emissiveTexture ? obj.emissiveTexture : 0
+);
+glUniform1i(
+    glGetUniformLocation(m_Scene3DShader->getID(), "u_EmissiveMap"),
+    2
+);
+
+// EMISSIVE COLOR
+glUniform3fv(
+    glGetUniformLocation(m_Scene3DShader->getID(), "u_EmissiveColor"),
+    1,
+    &obj.emissiveColor[0]
+);
+
+// EMISSIVE STRENGTH
+glUniform1f(
+    glGetUniformLocation(m_Scene3DShader->getID(), "u_EmissiveStrength"),
+    obj.emissiveStrength
+);
+
+
+
+
+    glDrawElements(
+        GL_TRIANGLES,
+        obj.indexCount,
+        obj.indexType,
+        nullptr
+    );
+}
 
 
 	// PASS 1: SCENA 3D → FBO
@@ -654,6 +729,139 @@ void Renderer::render()
 
 	glBindVertexArray(m_VAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+    glUniform1f(
+        glGetUniformLocation(m_HighlightShader->getID(), "u_Threshold"),
+        params.highlightThreshold
+    );
+
+    // Depth texture dla COC
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_DepthTexture);
+    glUniform1i(glGetUniformLocation(m_HighlightShader->getID(), "u_DepthTexture"), 1);
+
+    // #3 - parametry COC dla blur vs bokeh (Sec.4.1 Jeong 2022)
+    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_CocThreshold"), params.cocThreshold);
+    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_FocalLength"), params.focalLength);
+    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_Aperture"), params.aperture);
+    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_SensorWidth"), params.sensorWidth);
+    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_FocusDepth"), params.focusDepth);
+    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_NearPlane"), 0.1f);
+    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_FarPlane"), 100.0f);
+    glUniform2f(glGetUniformLocation(m_HighlightShader->getID(), "u_Resolution"), 1280.0f, 720.0f);
+
+    glBindVertexArray(m_VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    // PASS 1.75: BOKEH 
+
+    glBindFramebuffer(GL_FRAMEBUFFER, m_BokehFBO);
+    glViewport(0, 0, 1280, 720);
+    glDisable(GL_DEPTH_TEST);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    m_BokehShader->bind();
+
+    // wejście = highlight
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_HighlightTexture);
+    glUniform1i(
+        glGetUniformLocation(m_BokehShader->getID(), "u_HighlightTexture"),
+        0
+    );
+
+    glUniform1f(
+        glGetUniformLocation(m_BokehShader->getID(), "u_Radius"),
+        params.bokehRadius
+    );
+
+    glUniform2f(
+        glGetUniformLocation(m_BokehShader->getID(), "u_Resolution"),
+        1280.0f, 720.0f
+    );
+
+    glBindVertexArray(m_VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+
+    // PASS 2: DOF (BACKGROUND BLUR)
+
+    glBindFramebuffer(GL_FRAMEBUFFER, m_DOFFBO);
+    glViewport(0, 0, 1280, 720);
+    glDisable(GL_DEPTH_TEST);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    m_DOFShader->bind();
+
+    // color
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_ColorTexture);
+    glUniform1i(
+        glGetUniformLocation(m_DOFShader->getID(), "u_ColorTexture"),
+        0
+    );
+
+    // depth
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_DepthTexture);
+    glUniform1i(
+        glGetUniformLocation(m_DOFShader->getID(), "u_DepthTexture"),
+        1
+    );
+
+    glUniform2f(
+        glGetUniformLocation(m_DOFShader->getID(), "u_Resolution"),
+        1280.0f, 720.0f
+    );
+
+    glUniform1f(
+        glGetUniformLocation(m_DOFShader->getID(), "u_FocusDepth"),
+        params.focusDepth
+    );
+
+    glUniform1f(
+        glGetUniformLocation(m_DOFShader->getID(), "u_BlurStrength"),
+        params.blurStrength
+    );
+
+    // #1,#2 - parametry thin lens dla COC (Sec.5.1 Jeong 2022)
+    glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_FocalLength"), params.focalLength);
+    glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_Aperture"), params.aperture);
+    glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_SensorWidth"), params.sensorWidth);
+    glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_NearPlane"), 0.1f);
+    glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_FarPlane"), 100.0f);
+
+
+    glBindVertexArray(m_VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+    // PASS FINAL: DOF + BOKEH
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, 1280, 720);
+    glDisable(GL_DEPTH_TEST);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    m_FinalShader->bind();
+
+    // DOF (rozmyta scena)
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_DOFTexture);
+    glUniform1i(
+        glGetUniformLocation(m_FinalShader->getID(), "u_DOFTexture"),
+        0
+    );
+
+    // Bokeh (krążki światła)
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_BokehTexture);
+    glUniform1i(
+        glGetUniformLocation(m_FinalShader->getID(), "u_BokehTexture"),
+        1
+    );
+
+    glBindVertexArray(m_VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
 }

@@ -4,7 +4,6 @@ in vec2 vUV;
 out vec4 FragColor;
 
 uniform sampler2D u_HighlightTexture;
-uniform sampler2D uApertureTex;
 uniform float u_Radius;
 uniform vec2 u_Resolution;
 
@@ -17,9 +16,7 @@ float hash(vec2 p)
 // Funkcja: getApertureWeight(offset) -> float
 // Sample aperture texture (Sec.5.4.1 Jeong 2022)
 float getApertureWeight(vec2 offset) {
-    vec2 uv = offset * 0.5 + 0.5;
-    float mask = texture(uApertureTex, uv).r;
-    return mask;
+    return 1.0;
 }
 
 void main()

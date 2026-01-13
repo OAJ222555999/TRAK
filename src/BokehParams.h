@@ -6,6 +6,7 @@ struct BokehParams {
     
     int width = 1280;
     int height = 720;
+    float modelScale = 0.01f;  // Skala modelu (--scale), 1.0 = oryginalny rozmiar
     
     float focusDepth = 0.925f;
     float blurStrength = 5.0f;

@@ -67,7 +67,13 @@ Scene SceneLoader::loadGLTF(const std::string& path)
     tinygltf::TinyGLTF loader;
     std::string err, warn;
 
-    bool ret = loader.LoadASCIIFromFile(&model, &err, &warn, path);
+    // Obsługa zarówno .gltf (ASCII) jak i .glb (binary)
+    bool ret;
+    if (path.size() >= 4 && path.substr(path.size() - 4) == ".glb") {
+        ret = loader.LoadBinaryFromFile(&model, &err, &warn, path);
+    } else {
+        ret = loader.LoadASCIIFromFile(&model, &err, &warn, path);
+    }
 
     if (!warn.empty())
         std::cout << "[GLTF WARN] " << warn << std::endl;
@@ -84,6 +90,30 @@ Scene SceneLoader::loadGLTF(const std::string& path)
     std::cout << "[GLTF] Meshes: " << model.meshes.size() << std::endl;
     std::cout << "[GLTF] Images: " << model.images.size() << std::endl;
     std::cout << "[GLTF] Materials: " << model.materials.size() << std::endl;
+    
+    // Oblicz bounding box z accessorów
+    float minX = 1e9, minY = 1e9, minZ = 1e9;
+    float maxX = -1e9, maxY = -1e9, maxZ = -1e9;
+    for (const auto& mesh : model.meshes) {
+        for (const auto& prim : mesh.primitives) {
+            if (prim.attributes.count("POSITION")) {
+                const auto& acc = model.accessors[prim.attributes.at("POSITION")];
+                if (acc.minValues.size() >= 3 && acc.maxValues.size() >= 3) {
+                    minX = std::min(minX, (float)acc.minValues[0]);
+                    minY = std::min(minY, (float)acc.minValues[1]);
+                    minZ = std::min(minZ, (float)acc.minValues[2]);
+                    maxX = std::max(maxX, (float)acc.maxValues[0]);
+                    maxY = std::max(maxY, (float)acc.maxValues[1]);
+                    maxZ = std::max(maxZ, (float)acc.maxValues[2]);
+                }
+            }
+        }
+    }
+    float centerX = (minX + maxX) / 2, centerY = (minY + maxY) / 2, centerZ = (minZ + maxZ) / 2;
+    float sizeX = maxX - minX, sizeY = maxY - minY, sizeZ = maxZ - minZ;
+    std::cout << "[GLTF] Bounding box: (" << minX << ", " << minY << ", " << minZ << ") to (" << maxX << ", " << maxY << ", " << maxZ << ")\n";
+    std::cout << "[GLTF] Center: (" << centerX << ", " << centerY << ", " << centerZ << "), Size: " << std::max({sizeX, sizeY, sizeZ}) << "\n";
+    
     std::cout << "[GLTF] Processing meshes..." << std::flush;
 
     int meshCount = 0;

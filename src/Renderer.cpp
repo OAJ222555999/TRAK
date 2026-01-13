@@ -413,7 +413,7 @@ glUniform1f(
 
 for (const SceneObject& obj : m_Scene.objects)
 {
-    glm::mat4 model = glm::scale(obj.model, glm::vec3(0.01f));
+    glm::mat4 model = glm::scale(obj.model, glm::vec3(params.modelScale));
 
     glm::mat4 mvp =
         m_Camera->getProjection() *
@@ -510,6 +510,21 @@ glUniform1f(
         params.highlightThreshold
     );
 
+    // Depth texture dla COC
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_DepthTexture);
+    glUniform1i(glGetUniformLocation(m_HighlightShader->getID(), "u_DepthTexture"), 1);
+
+    // #3 - parametry COC dla blur vs bokeh (Sec.4.1 Jeong 2022)
+    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_CocThreshold"), params.cocThreshold);
+    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_FocalLength"), params.focalLength);
+    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_Aperture"), params.aperture);
+    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_SensorWidth"), params.sensorWidth);
+    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_FocusDepth"), params.focusDepth);
+    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_NearPlane"), 0.1f);
+    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_FarPlane"), 100.0f);
+    glUniform2f(glGetUniformLocation(m_HighlightShader->getID(), "u_Resolution"), 1280.0f, 720.0f);
+
     glBindVertexArray(m_VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
@@ -584,6 +599,14 @@ glUniform1f(
         glGetUniformLocation(m_DOFShader->getID(), "u_BlurStrength"),
         params.blurStrength
     );
+
+    // #1,#2 - parametry thin lens dla COC (Sec.5.1 Jeong 2022)
+    glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_FocalLength"), params.focalLength);
+    glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_Aperture"), params.aperture);
+    glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_SensorWidth"), params.sensorWidth);
+    glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_NearPlane"), 0.1f);
+    glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_FarPlane"), 100.0f);
+
 
     glBindVertexArray(m_VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);

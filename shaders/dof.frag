@@ -10,11 +10,40 @@ uniform vec2 u_Resolution;
 uniform float u_FocusDepth;
 uniform float u_BlurStrength;
 
+// Parametry thin lens (Sec.5.1 Jeong 2022)
+uniform float u_FocalLength;   // ogniskowa [m], np. 0.050
+uniform float u_Aperture;      // f-number, np. 1.4
+uniform float u_SensorWidth;   // szerokosc sensora [m], np. 0.036
+uniform float u_NearPlane;
+uniform float u_FarPlane;
+
+// Konwersja normalized depth [0,1] do world-space distance
+float linearizeDepth(float d) {
+    return u_NearPlane * u_FarPlane / (u_FarPlane - d * (u_FarPlane - u_NearPlane));
+}
+
 // TODO readme.md #1,#2 - COC z thin lens
-// Funkcja: computeCoC(depth) -> cocPixels
-// Wzor: Eq.7 Jeong 2022, Sec.5.1
+// Eq.7 z Jeong 2022, Sec.5.1:
+// C(d, d_f) = (E*F / (d_f - F)) * ((d - d_f) / d)
+// gdzie: E = lens radius, F = focal length, d_f = focus distance, d = object distance
 float computeCoC(float depth) {
-    return max(depth - u_FocusDepth, 0.0);
+    float d = linearizeDepth(depth);              // object distance [m]
+    float d_f = linearizeDepth(u_FocusDepth);     // focus distance [m]
+    float F = u_FocalLength;                       // focal length [m]
+    float E = F / u_Aperture;                      // lens radius [m]
+    
+    // Zabezpieczenie przed dzieleniem przez zero
+    if (abs(d_f - F) < 0.0001 || abs(d) < 0.0001) {
+        return 0.0;
+    }
+    
+    // Eq.7: C = (E*F / (d_f - F)) * ((d - d_f) / d)
+    float cocMeters = (E * F / (d_f - F)) * ((d - d_f) / d);
+    
+    // Konwersja metrow na piksele
+    float cocPixels = abs(cocMeters) * (u_Resolution.x / u_SensorWidth);
+    
+    return cocPixels;
 }
 
 void main()
@@ -24,7 +53,8 @@ void main()
 
     float coc = computeCoC(depth);
 
-    float radiusPx = coc * u_BlurStrength * 20.0;
+    // COC jest juz w pikselach (Eq.7), blurStrength jako mnoznik kontrolny
+    float radiusPx = coc * u_BlurStrength;
     radiusPx = min(radiusPx, 50.0);
 
     if (radiusPx < 0.5)

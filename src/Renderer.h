@@ -51,5 +51,4 @@ public:
 private:
     Camera* m_Camera = nullptr;
     Scene m_Scene;
-    
 };

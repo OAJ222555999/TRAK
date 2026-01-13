@@ -30,6 +30,11 @@ void main()
     const float GOLDEN_ANGLE = 2.39996323;
 
     float radiusPx = u_Radius * u_Resolution.y * 0.01;
+    
+    // Redukcja bokeh przy krawedziach ekranu
+    float edgeDist = min(min(vUV.x, vUV.y), min(1.0 - vUV.x, 1.0 - vUV.y));
+    radiusPx *= smoothstep(0.0, 0.05, edgeDist);
+    
     radiusPx = min(radiusPx, 40.0);
 
     float randAngle = hash(vUV * u_Resolution) * 6.2831853;

@@ -55,6 +55,11 @@ void main()
 
     // COC jest juz w pikselach (Eq.7), blurStrength jako mnoznik kontrolny
     float radiusPx = coc * u_BlurStrength;
+    
+    // Redukcja blur przy krawedziach ekranu
+    float edgeDist = min(min(vUV.x, vUV.y), min(1.0 - vUV.x, 1.0 - vUV.y));
+    radiusPx *= smoothstep(0.0, 0.05, edgeDist);
+    
     radiusPx = min(radiusPx, 50.0);
 
     if (radiusPx < 0.5)

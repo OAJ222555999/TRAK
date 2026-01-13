@@ -28,7 +28,10 @@ void printHelp() {
 
 int main(int argc, char* argv[])
 {
-    std::string scenePath = "assets/Duck/Duck.gltf";
+    std::string scenePath = "assets/la_night_city/scene.gltf";
+    //std::string scenePath = "assets/Duck/Duck.gltf";
+    //std::string scenePath = "assets/PunctualLamp/LightsPunctualLamp.gltf";
+    //std::string scenePath = "assets/fountain_base/scene.gltf";
     float focusDepth = 0.925f;
     float aperture = 1.4f;
     float bokehRadius = 4.0f;

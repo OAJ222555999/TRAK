@@ -25,7 +25,6 @@ void printHelp() {
     std::cout << "  Strzalki lewo/prawo Bokeh radius\n";
     std::cout << "  Q/E                 Aperture\n";
     std::cout << "  WASD                Kamera\n";
-    std::cout << "  M                Włączenie/Wyłączenie poruszania za pomocą myszki\n";
 }
 
 int main(int argc, char* argv[])

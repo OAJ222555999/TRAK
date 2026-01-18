@@ -19,6 +19,7 @@ BokehRenderer.exe --help
 --aperture <f>   F-number (default: 1.4)
 --radius <px>    Bokeh radius (default: 4.0)
 --scale <f>      Model scale (default: 0.01, 1.0=oryginalny)
+-lut   <Y/N>       Use LUT (default: Y - yes)
 ```
 
 **Przykład - oryginalny rozmiar modelu:**

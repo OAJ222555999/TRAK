@@ -23,6 +23,8 @@ Application::~Application()
 {
     shutdown();
 }
+
+
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
     Application* app =
@@ -79,10 +81,10 @@ void Application::initWindow()
 
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-{
-    std::cerr << "Failed to initialize GLAD\n";
-    return;
-}
+    {
+        std::cerr << "Failed to initialize GLAD\n";
+        return;
+    }
 
 
 
@@ -101,55 +103,54 @@ void Application::run()
 
 
     while (!glfwWindowShouldClose(m_Window))
-{
-    auto now = std::chrono::high_resolution_clock::now();
-    float dt = std::chrono::duration<float>(now - lastTime).count();
-    lastTime = now;
+    {
+        auto now = std::chrono::high_resolution_clock::now();
+        float dt = std::chrono::duration<float>(now - lastTime).count();
+        lastTime = now;
+        
 
-    
+        Camera* cam = m_Renderer.getCamera();
+        if (cam)
+        {
+            float forward = 0.0f;
+            float right = 0.0f;
 
-    Camera* cam = m_Renderer.getCamera();
-if (cam)
-{
-    float forward = 0.0f;
-    float right = 0.0f;
+            if (glfwGetKey(m_Window, GLFW_KEY_W) == GLFW_PRESS) forward += 1.0f;
+            if (glfwGetKey(m_Window, GLFW_KEY_S) == GLFW_PRESS) forward -= 1.0f;
+            if (glfwGetKey(m_Window, GLFW_KEY_D) == GLFW_PRESS) right += 1.0f;
+            if (glfwGetKey(m_Window, GLFW_KEY_A) == GLFW_PRESS) right -= 1.0f;
 
-    if (glfwGetKey(m_Window, GLFW_KEY_W) == GLFW_PRESS) forward += 1.0f;
-    if (glfwGetKey(m_Window, GLFW_KEY_S) == GLFW_PRESS) forward -= 1.0f;
-    if (glfwGetKey(m_Window, GLFW_KEY_D) == GLFW_PRESS) right += 1.0f;
-    if (glfwGetKey(m_Window, GLFW_KEY_A) == GLFW_PRESS) right -= 1.0f;
-
-    cam->processKeyboard(forward, right, dt);
-}
-
-    BokehParams& p = m_Renderer.params;
-    bool changed = false;
-    if (glfwGetKey(m_Window, GLFW_KEY_UP) == GLFW_PRESS)    { p.focusDepth += 0.005f; changed = true; }
-    if (glfwGetKey(m_Window, GLFW_KEY_DOWN) == GLFW_PRESS)  { p.focusDepth -= 0.005f; changed = true; }
-    if (glfwGetKey(m_Window, GLFW_KEY_LEFT) == GLFW_PRESS)  { p.bokehRadius -= 0.1f; changed = true; }
-    if (glfwGetKey(m_Window, GLFW_KEY_RIGHT) == GLFW_PRESS) { p.bokehRadius += 0.1f; changed = true; }
-    if (glfwGetKey(m_Window, GLFW_KEY_Q) == GLFW_PRESS)     { p.aperture -= 0.05f; changed = true; }
-    if (glfwGetKey(m_Window, GLFW_KEY_E) == GLFW_PRESS)     { p.aperture += 0.05f; changed = true; }
-    
-    if (p.focusDepth < 0.0f) p.focusDepth = 0.0f;
-    if (p.focusDepth > 1.0f) p.focusDepth = 1.0f;
-    if (p.bokehRadius < 1.0f) p.bokehRadius = 1.0f;
-    if (p.bokehRadius > 20.0f) p.bokehRadius = 20.0f;
-    if (p.aperture < 1.0f) p.aperture = 1.0f;
-    if (p.aperture > 22.0f) p.aperture = 22.0f;
-
-    if (changed) {
-        static float lastFocus = -1, lastAperture = -1;
-        if (p.focusDepth != lastFocus || p.aperture != lastAperture) {
-            std::cout << "[PARAMS] focus=" << p.focusDepth << " aperture=f/" << p.aperture << " radius=" << p.bokehRadius << "\n";
-            lastFocus = p.focusDepth; lastAperture = p.aperture;
+            cam->processKeyboard(forward, right, dt);
         }
-    }
 
-    m_Renderer.render();
-    glfwSwapBuffers(m_Window);
-    glfwPollEvents();
-}
+        BokehParams& p = m_Renderer.params;
+        bool changed = false;
+        if (glfwGetKey(m_Window, GLFW_KEY_UP) == GLFW_PRESS)    { p.focusDepth += 0.005f; changed = true; }
+        if (glfwGetKey(m_Window, GLFW_KEY_DOWN) == GLFW_PRESS)  { p.focusDepth -= 0.005f; changed = true; }
+        if (glfwGetKey(m_Window, GLFW_KEY_LEFT) == GLFW_PRESS)  { p.bokehRadius -= 0.1f; changed = true; }
+        if (glfwGetKey(m_Window, GLFW_KEY_RIGHT) == GLFW_PRESS) { p.bokehRadius += 0.1f; changed = true; }
+        if (glfwGetKey(m_Window, GLFW_KEY_Q) == GLFW_PRESS)     { p.aperture -= 0.05f; changed = true; }
+        if (glfwGetKey(m_Window, GLFW_KEY_E) == GLFW_PRESS)     { p.aperture += 0.05f; changed = true; }
+        
+        if (p.focusDepth < 0.0f) p.focusDepth = 0.0f;
+        if (p.focusDepth > 1.0f) p.focusDepth = 1.0f;
+        if (p.bokehRadius < 1.0f) p.bokehRadius = 1.0f;
+        if (p.bokehRadius > 20.0f) p.bokehRadius = 20.0f;
+        if (p.aperture < 1.0f) p.aperture = 1.0f;
+        if (p.aperture > 22.0f) p.aperture = 22.0f;
+
+        if (changed) {
+            static float lastFocus = -1, lastAperture = -1;
+            if (p.focusDepth != lastFocus || p.aperture != lastAperture) {
+                std::cout << "[PARAMS] focus=" << p.focusDepth << " aperture=f/" << p.aperture << " radius=" << p.bokehRadius << "\n";
+                lastFocus = p.focusDepth; lastAperture = p.aperture;
+            }
+        }
+
+        m_Renderer.render();
+        glfwSwapBuffers(m_Window);
+        glfwPollEvents();
+    }
 
 }
 

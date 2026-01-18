@@ -367,6 +367,42 @@ void Renderer::init()
 		std::cout << "Bokeh FBO complete" << std::endl;
 	}
 
+	if(params.isLutUsed)
+	{
+		// LUT 
+		std::cout << "[INIT] Look-up table initialization..." << std::endl;
+		unsigned int lutLoadedTexturesNumber = 0;
+		for (short i = 0; i < lutTexturesNumber; i++) 
+		{
+			int width, height, channels;
+			unsigned char* lutTextureData = stbi_load(lutTextureFiles[i].c_str(), &width, &height, &channels, 4);
+
+			if (lutTextureData) 
+			{
+				glGenTextures(1, &Renderer::lookUpTable[i]);
+				glBindTexture(GL_TEXTURE_2D, lookUpTable[i]);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, lutTextureData);
+				
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				
+				std::cout << "\t[SUCCESS] Loaded LUT texture: width="<< width << ", height=" << height << ", file=" << lutTextureFiles[i] << std::endl;
+				lutLoadedTexturesNumber++;
+				stbi_image_free(lutTextureData);
+			}
+			else
+			{
+				std::cerr << "\t[FAILED] Cannot load LUT texture, file=" << lutTextureFiles[i] << std::endl;
+			}
+		}
+		std::cout << "\n\tThe number of LUT texture loaded: "<< lutLoadedTexturesNumber << "/" << lutTexturesNumber << std::endl;
+		
+		if(lutLoadedTexturesNumber != lutTexturesNumber)
+		{
+			params.isLutUsed = false;
+			std::cerr << "\t[FAILED] Some LUT textures are missing... Look-up table will not be used" << std::endl;
+		} 
+	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 
@@ -573,6 +609,49 @@ void Renderer::render()
 	// aperature
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, m_ApertureTexture);
+
+	glUniform1f(glGetUniformLocation(bokehShaderID, "u_IsLutUsed"), params.isLutUsed);
+
+	// LUT
+	if(params.isLutUsed)
+	{;
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, lookUpTable[0]);
+		glUniform1i(glGetUniformLocation(bokehShaderID, "u_LutTexture0"), 2);
+
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, lookUpTable[1]);
+		glUniform1i(glGetUniformLocation(bokehShaderID, "u_LutTexture1"), 3);
+
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, lookUpTable[2]);
+		glUniform1i(glGetUniformLocation(bokehShaderID, "u_LutTexture2"), 4);
+
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, lookUpTable[3]);
+		glUniform1i(glGetUniformLocation(bokehShaderID, "u_LutTexture3"), 5);
+
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_2D, lookUpTable[4]);
+		glUniform1i(glGetUniformLocation(bokehShaderID, "u_LutTexture4"), 6);
+
+		glActiveTexture(GL_TEXTURE7);
+		glBindTexture(GL_TEXTURE_2D, lookUpTable[5]);
+		glUniform1i(glGetUniformLocation(bokehShaderID, "u_LutTexture5"), 7);
+
+		glActiveTexture(GL_TEXTURE8);
+		glBindTexture(GL_TEXTURE_2D, lookUpTable[6]);
+		glUniform1i(glGetUniformLocation(bokehShaderID, "u_LutTexture6"), 8);
+
+		glActiveTexture(GL_TEXTURE9);
+		glBindTexture(GL_TEXTURE_2D, lookUpTable[7]);
+		glUniform1i(glGetUniformLocation(bokehShaderID, "u_LutTexture7"), 9);
+
+		glUniform1f(glGetUniformLocation(bokehShaderID, "u_Aperture"), params.aperture);
+
+		glUniform1f(glGetUniformLocation(bokehShaderID, "u_FocusDepth"), params.focusDepth);
+	}
+
 	glUniform1i(glGetUniformLocation(bokehShaderID, "uApertureTex"), 1);
 
 

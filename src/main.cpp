@@ -15,6 +15,7 @@ void printHelp() {
     std::cout << "  --radius <px>       Bokeh radius (default: 4.0)\n";
     std::cout << "  --scale <f>         Model scale (default: 0.01, 1.0=oryginalny)\n";
     std::cout << "  --help              Wyswietl pomoc\n";
+    std::cout << "  --lut   <0/1>       Use LUT (default: 1 - true)\n";
     std::cout << "\nDostepne sceny:\n";
     std::cout << "  assets/Duck/Duck.gltf           (mala, szybka)\n";
     std::cout << "  assets/cyborg/scene.gltf        (srednia)\n";
@@ -36,6 +37,7 @@ int main(int argc, char* argv[])
     float aperture = 1.4f;
     float bokehRadius = 4.0f;
     float modelScale = 0.01f;
+    bool isLutUsed = 1;
 
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "--help") == 0) {
@@ -57,10 +59,13 @@ int main(int argc, char* argv[])
         if (strcmp(argv[i], "--scale") == 0 && i + 1 < argc) {
             modelScale = std::stof(argv[++i]);
         }
+        if (strcmp(argv[i], "--lut") == 0 && i + 1 < argc) {
+            isLutUsed = std::stof(argv[++i]);
+        }
     }
 
     std::cout << "[CLI] Scene: " << scenePath << "\n";
-    std::cout << "[CLI] Focus: " << focusDepth << " Aperture: f/" << aperture << " Radius: " << bokehRadius << " Scale: " << modelScale << "\n";
+    std::cout << "[CLI] Focus: " << focusDepth << " Aperture: f/" << aperture << " Radius: " << bokehRadius << " Scale: " << modelScale << " LUT: " << isLutUsed << "\n";
 
     Application app;
     app.getRenderer().params.focusDepth = focusDepth;
@@ -68,6 +73,7 @@ int main(int argc, char* argv[])
     app.getRenderer().params.bokehRadius = bokehRadius;
     app.getRenderer().params.modelScale = modelScale;
     app.getRenderer().params.scenePath = scenePath;
+    app.getRenderer().params.isLutUsed = isLutUsed;
     
     app.run();
 

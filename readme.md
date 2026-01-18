@@ -51,7 +51,6 @@ BokehRenderer.exe --help
 5. Visibility sampling dla bokeh (Sec.4.2) - razem z #6
 6. Test depth wewnątrz krążka bokeh (Sec.4.2) - razem z #5
 7. Energy conservation przy blendowaniu (Sec.4.1) - razem z #3
-8. Bokeh LUT (precomputed texture) (Sec.5.2) - niezależne
 
 ## na koniec
 9. Downsampling / clustering highlightów (Sec.4.2.2) - razem z #3

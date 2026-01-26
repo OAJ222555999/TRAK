@@ -4,7 +4,6 @@
 #include "scene/Scene.h"
 #include "BokehParams.h"
 
-
 class Renderer
 {
 public:
@@ -51,4 +50,18 @@ public:
 private:
     Camera* m_Camera = nullptr;
     Scene m_Scene;
+
+    static constexpr unsigned int lutTexturesNumber = 8; 
+    std::string lutTextureFiles[lutTexturesNumber] = { 
+                        "assets/lut_textures/1.png", 
+                        "assets/lut_textures/3.png",
+                        "assets/lut_textures/5.png",
+                        "assets/lut_textures/8.png",
+                        "assets/lut_textures/10.png",
+                        "assets/lut_textures/15.png",
+                        "assets/lut_textures/20.png",
+                        "assets/lut_textures/30.png"
+                    };
+
+    GLuint lookUpTable[lutTexturesNumber];
 };

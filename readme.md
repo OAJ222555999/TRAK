@@ -19,6 +19,7 @@ BokehRenderer.exe --help
 --aperture <f>   F-number (default: 1.4)
 --radius <px>    Bokeh radius (default: 4.0)
 --scale <f>      Model scale (default: 0.01, 1.0=oryginalny)
+--lut   <0/1>       Use LUT (default: 1 - true)
 ```
 
 **Przykład - oryginalny rozmiar modelu:**
@@ -50,7 +51,7 @@ BokehRenderer.exe --help
 5. Visibility sampling dla bokeh (Sec.4.2) - razem z #6
 6. Test depth wewnątrz krążka bokeh (Sec.4.2) - razem z #5
 7. Energy conservation przy blendowaniu (Sec.4.1) - razem z #3
-8. Bokeh LUT (precomputed texture) (Sec.5.2) - niezależne
+8. Bokeh LUT (precomputed texture) (Sec.5.2) - zrobione
 
 ## na koniec
 9. Downsampling / clustering highlightów (Sec.4.2.2) - razem z #3

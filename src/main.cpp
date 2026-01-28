@@ -24,6 +24,7 @@ void printHelp() {
     std::cout << "  Strzalki gora/dol   Focus depth\n";
     std::cout << "  Strzalki lewo/prawo Bokeh radius\n";
     std::cout << "  Q/E                 Aperture\n";
+    std::cout << "  O/P                 Aperture shape\n";
     std::cout << "  WASD                Kamera\n";
 }
 
@@ -36,7 +37,7 @@ int main(int argc, char* argv[])
     float focusDepth = 0.925f;
     float aperture = 1.4f;
     float bokehRadius = 4.0f;
-    float modelScale = 0.01f;
+    float modelScale = 0.05f;
     bool isLutUsed = 1;
 
     for (int i = 1; i < argc; ++i) {

@@ -8,6 +8,9 @@
 #include "loader/SceneLoader.h"
 
 #include <stb_image.h>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 
 Renderer::Renderer()
@@ -367,26 +370,26 @@ void Renderer::init()
 		std::cout << "Bokeh FBO complete" << std::endl;
 	}
 
-	if(params.isLutUsed)
+	if (params.isLutUsed)
 	{
 		// LUT 
 		std::cout << "[INIT] Look-up table initialization..." << std::endl;
 		unsigned int lutLoadedTexturesNumber = 0;
-		for (short i = 0; i < lutTexturesNumber; i++) 
+		for (short i = 0; i < lutTexturesNumber; i++)
 		{
 			int width, height, channels;
 			unsigned char* lutTextureData = stbi_load(lutTextureFiles[i].c_str(), &width, &height, &channels, 4);
 
-			if (lutTextureData) 
+			if (lutTextureData)
 			{
 				glGenTextures(1, &Renderer::lookUpTable[i]);
 				glBindTexture(GL_TEXTURE_2D, lookUpTable[i]);
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, lutTextureData);
-				
+
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-				
-				std::cout << "\t[SUCCESS] Loaded LUT texture: width="<< width << ", height=" << height << ", file=" << lutTextureFiles[i] << std::endl;
+
+				std::cout << "\t[SUCCESS] Loaded LUT texture: width=" << width << ", height=" << height << ", file=" << lutTextureFiles[i] << std::endl;
 				lutLoadedTexturesNumber++;
 				stbi_image_free(lutTextureData);
 			}
@@ -395,13 +398,13 @@ void Renderer::init()
 				std::cerr << "\t[FAILED] Cannot load LUT texture, file=" << lutTextureFiles[i] << std::endl;
 			}
 		}
-		std::cout << "\n\tThe number of LUT texture loaded: "<< lutLoadedTexturesNumber << "/" << lutTexturesNumber << std::endl;
-		
-		if(lutLoadedTexturesNumber != lutTexturesNumber)
+		std::cout << "\n\tThe number of LUT texture loaded: " << lutLoadedTexturesNumber << "/" << lutTexturesNumber << std::endl;
+
+		if (lutLoadedTexturesNumber != lutTexturesNumber)
 		{
 			params.isLutUsed = false;
 			std::cerr << "\t[FAILED] Some LUT textures are missing... Look-up table will not be used" << std::endl;
-		} 
+		}
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
@@ -412,7 +415,7 @@ void Renderer::init()
 		<< " (" << m_Scene.objects.size() << " objects)" << std::endl;
 
 
-	// APERATURE
+	// APERTURE
 	glGenTextures(1, &m_ApertureTexture);
 	glBindTexture(GL_TEXTURE_2D, m_ApertureTexture);
 
@@ -423,24 +426,25 @@ void Renderer::init()
 	float borderColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
-	int width, height, nrChannels;
-	unsigned char* data = stbi_load("assets/Aperatures/Star_aperature.png", &width, &height, &nrChannels, 0);
+	m_ApertureFiles.clear();
+	std::string aperturePath = "assets/Aperatures";
+	if (fs::exists(aperturePath) && fs::is_directory(aperturePath)) {
+		for (const auto& entry : fs::directory_iterator(aperturePath)) {
+			auto ext = entry.path().extension();
+			if (ext == ".png" || ext == ".jpg" || ext == ".jpeg") {
+				m_ApertureFiles.push_back(entry.path().string());
+			}
+		}
+	}
 
-	if (data) {
-		glBindTexture(GL_TEXTURE_2D, m_ApertureTexture);
-		GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB;
-
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-		std::cout << "[SUCCESS] Loaded aperture texture: " << width << "x" << height << std::endl;
-		stbi_image_free(data);
+	if (!m_ApertureFiles.empty()) {
+		m_CurrentApertureIndex = 0;
+		loadCurrentAperture();
 	}
 	else {
-		std::cerr << "[ERROR] Failed to load aperture texture" << std::endl;
-		unsigned char whitePixel[] = { 255, 255, 255, 255 };
-		glBindTexture(GL_TEXTURE_2D, m_ApertureTexture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, whitePixel);
+		std::cerr << "[ERROR] No aperture textures found in " << aperturePath << std::endl;
+		unsigned char white[] = { 255, 255, 255, 255 };
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, white);
 	}
 }
 
@@ -448,8 +452,6 @@ void Renderer::init()
 
 void Renderer::render()
 {
-
-
 	// PASS 1: SCENA 3D → FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 	glViewport(0, 0, 1280, 720);
@@ -577,20 +579,20 @@ void Renderer::render()
 		params.highlightThreshold
 	);
 
-    // Depth texture dla COC
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_DepthTexture);
-    glUniform1i(glGetUniformLocation(m_HighlightShader->getID(), "u_DepthTexture"), 1);
+	// Depth texture dla COC
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, m_DepthTexture);
+	glUniform1i(glGetUniformLocation(m_HighlightShader->getID(), "u_DepthTexture"), 1);
 
-    // #3 - parametry COC dla blur vs bokeh (Sec.4.1 Jeong 2022)
-    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_CocThreshold"), params.cocThreshold);
-    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_FocalLength"), params.focalLength);
-    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_Aperture"), params.aperture);
-    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_SensorWidth"), params.sensorWidth);
-    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_FocusDepth"), params.focusDepth);
-    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_NearPlane"), 0.1f);
-    glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_FarPlane"), 100.0f);
-    glUniform2f(glGetUniformLocation(m_HighlightShader->getID(), "u_Resolution"), 1280.0f, 720.0f);
+	// #3 - parametry COC dla blur vs bokeh (Sec.4.1 Jeong 2022)
+	glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_CocThreshold"), params.cocThreshold);
+	glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_FocalLength"), params.focalLength);
+	glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_Aperture"), params.aperture);
+	glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_SensorWidth"), params.sensorWidth);
+	glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_FocusDepth"), params.focusDepth);
+	glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_NearPlane"), 0.1f);
+	glUniform1f(glGetUniformLocation(m_HighlightShader->getID(), "u_FarPlane"), 100.0f);
+	glUniform2f(glGetUniformLocation(m_HighlightShader->getID(), "u_Resolution"), 1280.0f, 720.0f);
 
 	glBindVertexArray(m_VAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -605,16 +607,12 @@ void Renderer::render()
 	m_BokehShader->bind();
 	GLuint bokehShaderID = m_BokehShader->getID();
 
-
-	// aperature
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, m_ApertureTexture);
-
 	glUniform1f(glGetUniformLocation(bokehShaderID, "u_IsLutUsed"), params.isLutUsed);
 
 	// LUT
-	if(params.isLutUsed)
-	{;
+	if (params.isLutUsed)
+	{
+		;
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, lookUpTable[0]);
 		glUniform1i(glGetUniformLocation(bokehShaderID, "u_LutTexture0"), 2);
@@ -652,30 +650,24 @@ void Renderer::render()
 		glUniform1f(glGetUniformLocation(bokehShaderID, "u_FocusDepth"), params.focusDepth);
 	}
 
-	glUniform1i(glGetUniformLocation(bokehShaderID, "uApertureTex"), 1);
-
-
-	// wejście = highlight
+	// Highlight
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_HighlightTexture);
-	glUniform1i(
-		glGetUniformLocation(m_BokehShader->getID(), "u_HighlightTexture"),
-		0
-	);
+	glUniform1i(glGetUniformLocation(bokehShaderID, "u_HighlightTexture"), 0);
 
-	glUniform1f(
-		glGetUniformLocation(m_BokehShader->getID(), "u_Radius"),
-		params.bokehRadius
-	);
+	// Aparature
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, m_ApertureTexture);
+	glUniform1i(glGetUniformLocation(bokehShaderID, "uApertureTex"), 1);
 
-	glUniform2f(
-		glGetUniformLocation(m_BokehShader->getID(), "u_Resolution"),
-		1280.0f, 720.0f
-	);
+	glUniform1f(glGetUniformLocation(bokehShaderID, "u_Radius"), params.bokehRadius);
+	glUniform2f(glGetUniformLocation(bokehShaderID, "u_Resolution"), 1280.0f, 720.0f);
+	glUniform1f(glGetUniformLocation(bokehShaderID, "u_Aperture"), params.aperture);
+	glUniform1f(glGetUniformLocation(bokehShaderID, "u_FocusDepth"), params.focusDepth);
+	glUniform1i(glGetUniformLocation(bokehShaderID, "u_IsLutUsed"), params.isLutUsed ? 1 : 0);
 
 	glBindVertexArray(m_VAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-
 
 
 	// PASS 2: DOF (BACKGROUND BLUR)
@@ -718,12 +710,12 @@ void Renderer::render()
 		params.blurStrength
 	);
 
-    // #1,#2 - parametry thin lens dla COC (Sec.5.1 Jeong 2022)
-    glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_FocalLength"), params.focalLength);
-    glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_Aperture"), params.aperture);
-    glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_SensorWidth"), params.sensorWidth);
-    glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_NearPlane"), 0.1f);
-    glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_FarPlane"), 100.0f);
+	// #1,#2 - parametry thin lens dla COC (Sec.5.1 Jeong 2022)
+	glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_FocalLength"), params.focalLength);
+	glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_Aperture"), params.aperture);
+	glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_SensorWidth"), params.sensorWidth);
+	glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_NearPlane"), 0.1f);
+	glUniform1f(glGetUniformLocation(m_DOFShader->getID(), "u_FarPlane"), 100.0f);
 
 
 	glBindVertexArray(m_VAO);
@@ -760,5 +752,40 @@ void Renderer::render()
 
 }
 
+void Renderer::loadCurrentAperture() {
+	if (m_ApertureFiles.empty()) return;
+
+	int width, height, nrChannels;
+	std::string filePath = m_ApertureFiles[m_CurrentApertureIndex];
+
+	stbi_set_flip_vertically_on_load(false);
+	unsigned char* data = stbi_load(filePath.c_str(), &width, &height, &nrChannels, 4);
+
+	if (data) {
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, m_ApertureTexture);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+		float borderColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+		glGenerateMipmap(GL_TEXTURE_2D);
+		stbi_image_free(data);
+	}
+}
+
+void Renderer::changeAperture(int delta) {
+	if (m_ApertureFiles.empty()) return;
+
+	m_CurrentApertureIndex += delta;
+
+	if (m_CurrentApertureIndex >= (int)m_ApertureFiles.size()) m_CurrentApertureIndex = 0;
+	if (m_CurrentApertureIndex < 0) m_CurrentApertureIndex = (int)m_ApertureFiles.size() - 1;
+
+	loadCurrentAperture();
+}
 
 

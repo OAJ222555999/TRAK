@@ -1,4 +1,6 @@
 #pragma once
+#include <vector>
+#include <string>
 #include "Shader.h"
 #include "core/Camera.h"
 #include "scene/Scene.h"
@@ -42,6 +44,7 @@ public:
     unsigned int m_DOFTexture = 0;
     Shader* m_DOFShader = nullptr;
     GLuint m_ApertureTexture = 0;
+    void changeAperture(int delta);
 
     GLuint m_SceneFBO = 0;
     GLuint m_SceneColor = 0;
@@ -64,4 +67,8 @@ private:
                     };
 
     GLuint lookUpTable[lutTexturesNumber];
+
+    std::vector<std::string> m_ApertureFiles;
+    int m_CurrentApertureIndex = 0;
+    void loadCurrentAperture();
 };

@@ -8,6 +8,50 @@
 #include <iostream>
 #include <cassert>
 
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+glm::mat4 GetNodeTransform(const tinygltf::Node& node)
+{
+    glm::mat4 m(1.0f);
+
+    if (node.matrix.size() == 16)
+    {
+        m = glm::make_mat4(node.matrix.data());
+    }
+    else
+    {
+        if (node.translation.size() == 3)
+            m = glm::translate(m, glm::vec3(
+                node.translation[0],
+                node.translation[1],
+                node.translation[2]
+            ));
+
+        if (node.rotation.size() == 4)
+        {
+            glm::quat q(
+                node.rotation[3],
+                node.rotation[0],
+                node.rotation[1],
+                node.rotation[2]
+            );
+            m *= glm::mat4_cast(q);
+        }
+
+        if (node.scale.size() == 3)
+            m = glm::scale(m, glm::vec3(
+                node.scale[0],
+                node.scale[1],
+                node.scale[2]
+            ));
+    }
+
+    return m;
+}
+
+
 
 GLuint LoadGLTextureFromImage(const tinygltf::Image& image)
 {
@@ -57,76 +101,30 @@ GLuint CreateBlackTexture()
     return tex;
 }
 
-
-
-Scene SceneLoader::loadGLTF(const std::string& path)
+void ProcessNode(
+    const tinygltf::Node& node,
+    const glm::mat4& parentTransform,
+    const tinygltf::Model& model,
+    Scene& scene
+)
 {
-    Scene scene;
+    glm::mat4 localTransform = GetNodeTransform(node);
+    glm::mat4 worldTransform = parentTransform * localTransform;
 
-    tinygltf::Model model;
-    tinygltf::TinyGLTF loader;
-    std::string err, warn;
 
-    // Obsługa zarówno .gltf (ASCII) jak i .glb (binary)
-    bool ret;
-    if (path.size() >= 4 && path.substr(path.size() - 4) == ".glb") {
-        ret = loader.LoadBinaryFromFile(&model, &err, &warn, path);
-    } else {
-        ret = loader.LoadASCIIFromFile(&model, &err, &warn, path);
-    }
-
-    if (!warn.empty())
-        std::cout << "[GLTF WARN] " << warn << std::endl;
-    if (!err.empty())
-        std::cerr << "[GLTF ERR] " << err << std::endl;
-
-    if (!ret)
+    if (node.mesh >= 0)
     {
-        std::cerr << "Failed to load glTF\n";
-        return scene;
-    }
+        const tinygltf::Mesh& mesh = model.meshes[node.mesh];
 
-    std::cout << "[GLTF] Loaded\n";
-    std::cout << "[GLTF] Meshes: " << model.meshes.size() << std::endl;
-    std::cout << "[GLTF] Images: " << model.images.size() << std::endl;
-    std::cout << "[GLTF] Materials: " << model.materials.size() << std::endl;
-    
-    // Oblicz bounding box z accessorów
-    float minX = 1e9, minY = 1e9, minZ = 1e9;
-    float maxX = -1e9, maxY = -1e9, maxZ = -1e9;
-    for (const auto& mesh : model.meshes) {
-        for (const auto& prim : mesh.primitives) {
-            if (prim.attributes.count("POSITION")) {
-                const auto& acc = model.accessors[prim.attributes.at("POSITION")];
-                if (acc.minValues.size() >= 3 && acc.maxValues.size() >= 3) {
-                    minX = std::min(minX, (float)acc.minValues[0]);
-                    minY = std::min(minY, (float)acc.minValues[1]);
-                    minZ = std::min(minZ, (float)acc.minValues[2]);
-                    maxX = std::max(maxX, (float)acc.maxValues[0]);
-                    maxY = std::max(maxY, (float)acc.maxValues[1]);
-                    maxZ = std::max(maxZ, (float)acc.maxValues[2]);
-                }
-            }
-        }
-    }
-    float centerX = (minX + maxX) / 2, centerY = (minY + maxY) / 2, centerZ = (minZ + maxZ) / 2;
-    float sizeX = maxX - minX, sizeY = maxY - minY, sizeZ = maxZ - minZ;
-    std::cout << "[GLTF] Bounding box: (" << minX << ", " << minY << ", " << minZ << ") to (" << maxX << ", " << maxY << ", " << maxZ << ")\n";
-    std::cout << "[GLTF] Center: (" << centerX << ", " << centerY << ", " << centerZ << "), Size: " << std::max({sizeX, sizeY, sizeZ}) << "\n";
-    
-    std::cout << "[GLTF] Processing meshes..." << std::flush;
-
-    int meshCount = 0;
-    for (const tinygltf::Mesh& mesh : model.meshes)
-    {
         for (const tinygltf::Primitive& prim : mesh.primitives)
         {
             SceneObject obj;
+            obj.model = worldTransform;
 
             glGenVertexArrays(1, &obj.vao);
             glBindVertexArray(obj.vao);
 
-            
+                
             const auto& posAccessor =
                 model.accessors[prim.attributes.at("POSITION")];
             const auto& posView =
@@ -146,7 +144,7 @@ Scene SceneLoader::loadGLTF(const std::string& path)
             glEnableVertexAttribArray(0);
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
-            
+                
             if (prim.attributes.count("NORMAL"))
             {
                 const auto& nAccessor =
@@ -169,7 +167,7 @@ Scene SceneLoader::loadGLTF(const std::string& path)
                 glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
             }
 
-           
+            
             if (prim.attributes.count("TEXCOORD_0"))
             {
                 const auto& uvAccessor =
@@ -192,7 +190,7 @@ Scene SceneLoader::loadGLTF(const std::string& path)
                 glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
             }
 
-         
+            
             if (prim.indices >= 0)
             {
                 const auto& iAccessor =
@@ -248,9 +246,7 @@ Scene SceneLoader::loadGLTF(const std::string& path)
                     obj.metallicRoughnessTexture = LoadGLTextureFromImage(img);
                 }
 
-                // -------------------------
-                // EMISSIVE TEXTURE
-                // -------------------------
+
                 static GLuint blackTexture = CreateBlackTexture();
                 obj.emissiveTexture = blackTexture;
                 obj.emissiveStrength = 0.0f;
@@ -296,12 +292,98 @@ Scene SceneLoader::loadGLTF(const std::string& path)
 
             scene.objects.push_back(obj);
         }
-        meshCount++;
+    }
+
+    for (int childIndex : node.children)
+    {
+        const tinygltf::Node& child = model.nodes[childIndex];
+        ProcessNode(child, worldTransform, model, scene);
+    }
+}
+
+
+
+Scene SceneLoader::loadGLTF(const std::string& path)
+{
+    Scene scene;
+
+    tinygltf::Model model;
+    tinygltf::TinyGLTF loader;
+    std::string err, warn;
+
+    bool ret;
+    if (path.size() >= 4 && path.substr(path.size() - 4) == ".glb") {
+        ret = loader.LoadBinaryFromFile(&model, &err, &warn, path);
+    } else {
+        ret = loader.LoadASCIIFromFile(&model, &err, &warn, path);
+    }
+
+    if (!warn.empty())
+        std::cout << "[GLTF WARN] " << warn << std::endl;
+    if (!err.empty())
+        std::cerr << "[GLTF ERR] " << err << std::endl;
+
+    if (!ret)
+    {
+        std::cerr << "Failed to load glTF\n";
+        return scene;
+    }
+
+    std::cout << "[GLTF] Loaded\n";
+    std::cout << "[GLTF] Meshes: " << model.meshes.size() << std::endl;
+    std::cout << "[GLTF] Images: " << model.images.size() << std::endl;
+    std::cout << "[GLTF] Materials: " << model.materials.size() << std::endl;
+    
+
+    float minX = 1e9, minY = 1e9, minZ = 1e9;
+    float maxX = -1e9, maxY = -1e9, maxZ = -1e9;
+    for (const auto& mesh : model.meshes) {
+        for (const auto& prim : mesh.primitives) {
+            if (prim.attributes.count("POSITION")) {
+                const auto& acc = model.accessors[prim.attributes.at("POSITION")];
+                if (acc.minValues.size() >= 3 && acc.maxValues.size() >= 3) {
+                    minX = std::min(minX, (float)acc.minValues[0]);
+                    minY = std::min(minY, (float)acc.minValues[1]);
+                    minZ = std::min(minZ, (float)acc.minValues[2]);
+                    maxX = std::max(maxX, (float)acc.maxValues[0]);
+                    maxY = std::max(maxY, (float)acc.maxValues[1]);
+                    maxZ = std::max(maxZ, (float)acc.maxValues[2]);
+                }
+            }
+        }
+    }
+    float centerX = (minX + maxX) / 2, centerY = (minY + maxY) / 2, centerZ = (minZ + maxZ) / 2;
+    float sizeX = maxX - minX, sizeY = maxY - minY, sizeZ = maxZ - minZ;
+    std::cout << "[GLTF] Bounding box: (" << minX << ", " << minY << ", " << minZ << ") to (" << maxX << ", " << maxY << ", " << maxZ << ")\n";
+    std::cout << "[GLTF] Center: (" << centerX << ", " << centerY << ", " << centerZ << "), Size: " << std::max({sizeX, sizeY, sizeZ}) << "\n";
+    float sceneSize = std::max({ sizeX, sizeY, sizeZ });
+
+    scene.globalScale = 20.0f / sceneSize;
+
+
+    std::cout << "[GLTF] Processing meshes..." << std::flush;
+
+    int sceneIndex = model.defaultScene >= 0
+        ? model.defaultScene
+        : 0;
+
+    const tinygltf::Scene& gltfScene = model.scenes[sceneIndex];
+
+    for (int nodeIndex : gltfScene.nodes)
+    {
+        const tinygltf::Node& rootNode = model.nodes[nodeIndex];
+        ProcessNode(
+            rootNode,
+            glm::mat4(1.0f), // identity = świat
+            model,
+            scene
+        );
     }
 
     std::cout << " done" << std::endl;
-    std::cout << "[GLTF] Scene objects: "
-              << scene.objects.size() << std::endl;
+
+
+
 
     return scene;
 }

@@ -10,6 +10,9 @@
 #include <stb_image.h>
 
 
+
+
+
 Renderer::Renderer()
 {
 	std::cout << "Renderer created\n";
@@ -58,6 +61,8 @@ void Renderer::init()
 		100.0f
 	);
 	std::cout << "[CAMERA] created\n";
+	
+
 
 	float cubeVertices[] = {
 		// front
@@ -444,7 +449,11 @@ void Renderer::render()
 
 	for (const SceneObject& obj : m_Scene.objects)
 	{
-		glm::mat4 model = glm::scale(obj.model, glm::vec3(params.modelScale));
+		glm::mat4 model =
+    		glm::scale(glm::mat4(1.0f), glm::vec3(m_Scene.globalScale)) *
+    		obj.model;
+
+
 
 		glm::mat4 mvp =
 			m_Camera->getProjection() *
@@ -651,31 +660,78 @@ void Renderer::render()
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
-	// PASS FINAL: DOF + BOKEH
+	// PASS FINAL / DEBUG
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, 1280, 720);
 	glDisable(GL_DEPTH_TEST);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	m_FinalShader->bind();
-
-	// DOF (rozmyta scena)
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_DOFTexture);
-	glUniform1i(
-		glGetUniformLocation(m_FinalShader->getID(), "u_DOFTexture"),
-		0
-	);
-
-	// Bokeh (krążki światła)
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, m_BokehTexture);
-	glUniform1i(
-		glGetUniformLocation(m_FinalShader->getID(), "u_BokehTexture"),
-		1
-	);
-
 	glBindVertexArray(m_VAO);
+
+
+	switch (m_DebugView)
+	{
+	case DebugView::SceneColor:
+		m_ScreenShader->bind();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, m_ColorTexture);
+		glUniform1i(
+			glGetUniformLocation(m_ScreenShader->getID(), "u_ScreenTexture"),
+			0
+		);
+		break;
+
+
+	case DebugView::Highlight:
+		m_ScreenShader->bind();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, m_HighlightTexture);
+		glUniform1i(
+			glGetUniformLocation(m_ScreenShader->getID(), "u_ScreenTexture"),
+			0
+		);
+		break;
+
+	case DebugView::BokehOnly:
+		m_ScreenShader->bind();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, m_BokehTexture);
+		glUniform1i(
+			glGetUniformLocation(m_ScreenShader->getID(), "u_ScreenTexture"),
+			0
+		);
+		break;
+
+	case DebugView::DOFOnly:
+		m_ScreenShader->bind();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, m_DOFTexture);
+		glUniform1i(
+			glGetUniformLocation(m_ScreenShader->getID(), "u_ScreenTexture"),
+			0
+		);
+		break;
+
+	case DebugView::Final:
+	default:
+		m_FinalShader->bind();
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, m_DOFTexture);
+		glUniform1i(
+			glGetUniformLocation(m_FinalShader->getID(), "u_DOFTexture"),
+			0
+		);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, m_BokehTexture);
+		glUniform1i(
+			glGetUniformLocation(m_FinalShader->getID(), "u_BokehTexture"),
+			1
+		);
+		break;
+	}
+
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 

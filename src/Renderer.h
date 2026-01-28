@@ -3,7 +3,15 @@
 #include "core/Camera.h"
 #include "scene/Scene.h"
 #include "BokehParams.h"
-
+enum class DebugView
+{
+    Final = 0,        // końcowy DOF + bokeh
+    SceneColor,       // surowa scena
+    Depth,            // depth
+    Highlight,        // jasne punkty
+    BokehOnly,        // same krążki bokeh
+    DOFOnly           // sama scena z DOF (bez bokeh)
+};
 
 class Renderer
 {
@@ -48,7 +56,11 @@ public:
     GLuint m_SceneColor = 0;
     GLuint m_SceneDepth = 0;
 
+    void setDebugView(DebugView view) { m_DebugView = view; }
+
+
 private:
     Camera* m_Camera = nullptr;
     Scene m_Scene;
+    DebugView m_DebugView = DebugView::Final;
 };

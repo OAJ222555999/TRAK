@@ -29,7 +29,7 @@ void main()
     vec3 sum = vec3(0.0);
     float weightSum = 0.0;
 
-    const int SAMPLES = 32; 
+    const int SAMPLES = 256; 
     const float GOLDEN_ANGLE = 2.39996323;
 
     float radiusPx = u_Radius * u_Resolution.y * 0.01;
@@ -54,12 +54,13 @@ void main()
         vec3 color =
             texture(u_HighlightTexture, vUV + offset).rgb;
 
-        float diskMask = smoothstep(1.0, 0.95, r);
+        float diskMask = smoothstep(1.0, 0.85, r);
         float apertureWeight = getApertureWeight(vec2(cos(a), sin(a)) * r);
 
         float w = diskMask * apertureWeight;
 
-        sum += color * color * w;
+        sum += color * color * w * 1.8;
+
         weightSum += w;
     }
 

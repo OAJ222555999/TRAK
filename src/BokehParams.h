@@ -12,6 +12,8 @@ struct BokehParams {
     float blurStrength = 5.0f;
     float bokehRadius = 4.0f;
     float highlightThreshold = 0.3f;
+
+    bool isLutUsed = true;
     
     // TODO readme.md #1,#2 - COC thin lens
     float focalLength = 0.05f;
@@ -26,4 +28,6 @@ struct BokehParams {
     // TODO readme.md #10,#11 - cat-eye, chromatic
     float catEyeStrength = 0.0f;
     float chromaticStrength = 0.0f;
+
+
 };

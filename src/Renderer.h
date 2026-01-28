@@ -1,17 +1,10 @@
 #pragma once
+#include <vector>
+#include <string>
 #include "Shader.h"
 #include "core/Camera.h"
 #include "scene/Scene.h"
 #include "BokehParams.h"
-enum class DebugView
-{
-    Final = 0,        // końcowy DOF + bokeh
-    SceneColor,       // surowa scena
-    Depth,            // depth
-    Highlight,        // jasne punkty
-    BokehOnly,        // same krążki bokeh
-    DOFOnly           // sama scena z DOF (bez bokeh)
-};
 
 class Renderer
 {
@@ -51,6 +44,7 @@ public:
     unsigned int m_DOFTexture = 0;
     Shader* m_DOFShader = nullptr;
     GLuint m_ApertureTexture = 0;
+    void changeAperture(int delta);
 
     GLuint m_SceneFBO = 0;
     GLuint m_SceneColor = 0;
@@ -62,5 +56,22 @@ public:
 private:
     Camera* m_Camera = nullptr;
     Scene m_Scene;
-    DebugView m_DebugView = DebugView::Final;
+
+    static constexpr unsigned int lutTexturesNumber = 8; 
+    std::string lutTextureFiles[lutTexturesNumber] = { 
+                        "assets/lut_textures/1.png", 
+                        "assets/lut_textures/3.png",
+                        "assets/lut_textures/5.png",
+                        "assets/lut_textures/8.png",
+                        "assets/lut_textures/10.png",
+                        "assets/lut_textures/15.png",
+                        "assets/lut_textures/20.png",
+                        "assets/lut_textures/30.png"
+                    };
+
+    GLuint lookUpTable[lutTexturesNumber];
+
+    std::vector<std::string> m_ApertureFiles;
+    int m_CurrentApertureIndex = 0;
+    void loadCurrentAperture();
 };

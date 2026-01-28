@@ -50,6 +50,9 @@ public:
     GLuint m_SceneColor = 0;
     GLuint m_SceneDepth = 0;
 
+    void setDebugView(DebugView view) { m_DebugView = view; }
+
+
 private:
     Camera* m_Camera = nullptr;
     Scene m_Scene;

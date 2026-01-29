@@ -43,7 +43,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	}
 
 	float dx = static_cast<float>(xpos - lastX);
-	float dy = static_cast<float>(lastY - ypos); // odwrócone Y
+	float dy = static_cast<float>(lastY - ypos); 
 
 	lastX = xpos;
 	lastY = ypos;
@@ -133,6 +133,25 @@ void Application::run()
 		if (glfwGetKey(m_Window, GLFW_KEY_RIGHT) == GLFW_PRESS) { p.bokehRadius += 0.1f; changed = true; }
 		if (glfwGetKey(m_Window, GLFW_KEY_Q) == GLFW_PRESS) { p.aperture -= 0.05f; changed = true; }
 		if (glfwGetKey(m_Window, GLFW_KEY_E) == GLFW_PRESS) { p.aperture += 0.05f; changed = true; }
+
+        if (glfwGetKey(m_Window, GLFW_KEY_1) == GLFW_PRESS)
+            m_Renderer.setDebugView(DebugView::Final);
+
+        if (glfwGetKey(m_Window, GLFW_KEY_2) == GLFW_PRESS)
+            m_Renderer.setDebugView(DebugView::SceneColor);
+
+        if (glfwGetKey(m_Window, GLFW_KEY_3) == GLFW_PRESS)
+            m_Renderer.setDebugView(DebugView::Depth);
+
+        if (glfwGetKey(m_Window, GLFW_KEY_4) == GLFW_PRESS)
+            m_Renderer.setDebugView(DebugView::Highlight);
+
+        if (glfwGetKey(m_Window, GLFW_KEY_5) == GLFW_PRESS)
+            m_Renderer.setDebugView(DebugView::BokehOnly);
+
+        if (glfwGetKey(m_Window, GLFW_KEY_6) == GLFW_PRESS)
+            m_Renderer.setDebugView(DebugView::DOFOnly);
+
 
 
 		if (glfwGetKey(m_Window, GLFW_KEY_P) == GLFW_PRESS) {

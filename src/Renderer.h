@@ -6,6 +6,15 @@
 #include "scene/Scene.h"
 #include "BokehParams.h"
 
+enum class DebugView
+{
+    Final = 0,        // końcowy DOF + bokeh
+    SceneColor,       // surowa scena
+    Highlight,        // jasne punkty
+    BokehOnly,        // same krążki bokeh
+    DOFOnly           // sama scena z DOF (bez bokeh)
+};
+
 class Renderer
 {
 public:
@@ -56,6 +65,8 @@ public:
 private:
     Camera* m_Camera = nullptr;
     Scene m_Scene;
+    DebugView m_DebugView;
+
 
     static constexpr unsigned int lutTexturesNumber = 8; 
     std::string lutTextureFiles[lutTexturesNumber] = { 

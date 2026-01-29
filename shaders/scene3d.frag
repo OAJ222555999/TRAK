@@ -20,9 +20,8 @@ uniform float u_EmissiveStrength;
 
 void main()
 {
-    // --------------------------------
+
     // ALBEDO + ALPHA CUTOUT
-    // --------------------------------
     vec4 tex = texture(u_Albedo, vUV);
     if (tex.a < 0.5)
         discard; // usuwamy fragmenty z przezroczystością poniżej 0.5

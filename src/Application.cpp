@@ -140,8 +140,6 @@ void Application::run()
         if (glfwGetKey(m_Window, GLFW_KEY_2) == GLFW_PRESS)
             m_Renderer.setDebugView(DebugView::SceneColor);
 
-        if (glfwGetKey(m_Window, GLFW_KEY_3) == GLFW_PRESS)
-            m_Renderer.setDebugView(DebugView::Depth);
 
         if (glfwGetKey(m_Window, GLFW_KEY_4) == GLFW_PRESS)
             m_Renderer.setDebugView(DebugView::Highlight);
